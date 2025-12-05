@@ -11,12 +11,13 @@ El sistema consta de **dos dispositivos**:
 ---
 
 ## 🚀 Características principales
-- Cronógrafo con servidor integrado (WiFi).
-- Pantalla OLED de 0,96" (SSD1306, I2C, 128x64).
-- Zumbador pasivo para alertas acústicas.
-- Alimentación mediante batería LiPo con módulo de carga TP4056.
-- Conectividad WiFi y Bluetooth para expansión futura.
-- Diseño modular y portátil.
+- ⏱️ Cronómetro de alta precisión (microsegundos)
+- 📡 Comunicación WiFi UDP (modo AP)
+- 🔋 Alimentación por batería LiPo con carga USB
+- 🎨 Interfaz OLED optimizada
+- 🔊 Feedback sonoro diferenciado
+- 🔌 Sistema de ping/pong para detección de conexión del End Plate
+- 💤 Modo reposo para ahorro energético
 
 ---
 
@@ -31,42 +32,15 @@ El sistema consta de **dos dispositivos**:
 ## 📐 Esquema básico de conexión
 
 ```
-           ┌─────────────────────────────────┐
-           │         ESP32 (CRONÓMETRO)      │
-           │                                 │
-BATERÍA →  │ Vin (5V)  ◄─── TP4056 VOut+     │
-           │   GND     ◄─── TP4056 VOut-     │
-           │                                 │
-           │ GPIO0  ──► BUTTON (BOOT/EN) ──┐ │
-           │          (a GND cuando presiona)│
-           │                                 │
-           │ GPIO25 ──► BUZZER [+]           │
-           │   GND  ◄── BUZZER [-]           │
-           │                                 │
-           │ GPIO21 ──► OLED SDA             │
-           │ GPIO22 ──► OLED SCL             │
-           │  3.3V  ──► OLED VCC             │
-           │   GND  ──► OLED GND             │
-           │                                 │
-           │ GPIO36 ◄── DIVISOR BATERÍA      │
-           │          (100kΩ/100kΩ de Bat+)  │
-           └─────────────────────────────────┘
-                    │
-                    ▼
-           ┌─────────────────────────────────┐
-           │        TP4056 + BATERÍA         │
-           │                                 │
-           │ Bat+  ◄── BATERÍA LiPo [+]      │
-           │ Bat-  ◄── BATERÍA LiPo [-]      │
-           │                                 │
-           │ Micro USB ──► CARGA (5V)        │
-           │                                 │
-           │ VOut+ ──► ESP32 Vin (5V)        │
-           │ VOut- ──► ESP32 GND             │
-           │                                 │
-           │ Bat+  ──► DIVISOR 100kΩ/100kΩ   │
-           │          └──► GPIO36 (lectura)  │
-           └─────────────────────────────────┘
+ESP32      → Componente
+───────────────────────
+Vin (5V)   → TP4056 VOut+
+GND        → TP4056 VOut- + OLED GND + Buzzer GND
+GPIO21     → OLED SDA
+GPIO22     → OLED SCL
+GPIO25     → Buzzer +
+GPIO36     → Divisor batería (100kΩ/100kΩ)
+3.3V       → OLED VCC
 ```
 ---
 
@@ -79,34 +53,14 @@ BATERÍA →  │ Vin (5V)  ◄─── TP4056 VOut+     │
 
 ## 📐 Esquema básico de conexión
 ```
-           ┌─────────────────────────────────┐
-           │         ESP32 (END PLATE)       │
-           │                                 |
-BATERÍA →  │ Vin (5V)  ◄─── TP4056 VOut+     |
-           │   GND     ◄─── TP4056 VOut-     │
-           │                                 │
-           │ GPIO0  ──► BUTTON (BOOT/EN) ──┐ │
-           │          (a GND cuando presiona)│
-           │                                 │
-           │ GPIO4  ◄── PIEZO [+]            │
-           │   GND  ◄── PIEZO [-]            │
-           │                                 │
-           │ GPIO2  ──► LED INTERNO          │
-           │          (con resistor 220Ω)    │
-           └─────────────────────────────────┘
-                    │
-                    ▼
-           ┌─────────────────────────────────┐
-           │        TP4056 + BATERÍA         │
-           │                                 │
-           │ Bat+  ◄── BATERÍA 18650 [+]     │
-           │ Bat-  ◄── BATERÍA 18650 [-]     │
-           │                                 │
-           │ Micro USB ──► CARGA (5V)        │
-           │                                 │
-           │ VOut+ ──► ESP32 Vin (5V)        │
-           │ VOut- ──► ESP32 GND             │
-           └─────────────────────────────────┘
+ESP32      → Componente
+───────────────────────
+Vin (5V)   → TP4056 VOut+
+GND        → TP4056 VOut-
+GPIO4      → Piezoeléctrico [+]
+GND        → Piezoeléctrico [-]
+GPIO0      → Botón BOOT/EN (ya integrado)
+GPIO2      → LED interno (feedback)
 ```
 ---
 
@@ -119,9 +73,41 @@ BATERÍA →  │ Vin (5V)  ◄─── TP4056 VOut+     |
 Abre el proyecto en Arduino IDE o PlatformIO.
 
 Instala las librerías necesarias:
-  Adafruit SSD1306
-  Adafruit GFX
-  WiFi.h (incluida en ESP32)
-  BluetoothSerial.h (incluida en ESP32)
+
+- Adafruit SSD1306
+- Adafruit GFX
+- BluetoothSerial.h (incluida en ESP32)
+- WiFi.h (incluida en ESP32)
+- WiFiUdp.h (incluida en ESP32)
 
 Compila y sube el firmware a cada ESP32
+
+---
+
+## 🛠️ Operación:
+- Iniciar stage: Pulsación corta botón BOOT/EN
+- Impacto normal: End Plate envía tiempo vía WiFi
+- Impacto final (Plate ID 99): Detiene cronómetro (Tiempo fin de ejercicio)
+- Detener manual: Pulsación corta durante ejecución
+- Reiniciar: Pulsación larga (3 segundos)
+
+---
+
+## ⚙️ Configuración Avanzada
+
+```
+1. Modificar SSID/Password:
+  En ambos firmwares:
+     const char* ssid = "AIRSOFT Stage 01";
+     const char* password = "12345678";
+
+2. Ajustar sensibilidad piezoeléctrico:
+  En End Plate:
+     const int VOLTAGE_THRESHOLD = 500;  #Valor más bajo = más sensible)
+
+3. Modificar tiempos:
+  En Cronómetro:
+     const uint32_t COUNTDOWN_DELAY_MS = 2000;  #Cuenta regresiva
+     const uint32_t STANDBY_TIMEOUT_MS = 60000; #Tiempo reposo
+
+```
