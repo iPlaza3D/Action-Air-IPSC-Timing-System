@@ -103,7 +103,7 @@ Compila y sube el firmware a cada ESP32
 
 2. Ajustar sensibilidad piezoeléctrico:
   En End Plate:
-     const int VOLTAGE_THRESHOLD = 500;  #Valor más bajo = más sensible)
+     const int VOLTAGE_THRESHOLD = 500;  #Valor más bajo = más sensible
 
 3. Modificar tiempos:
   En Cronómetro:
